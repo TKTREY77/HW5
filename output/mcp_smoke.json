@@ -1,0 +1,1124 @@
+{
+  "description": "MCP smoke tests: every campus-customs tool (15) invoked by Claude Code (headless `claude -p`, --mcp-config .mcp.json) against data/campus_customs_new.db; each output cross-checked with direct SQL queries right after the call. Problem 5 tests (4-15) run in sequence because write tools build on each other (approval #1 = invoice #501, #2 = 15% hoodie discount); approve/reject are human-only tools exercised here by the human owner as a test. The working DB was reset from data/campus_customs.db afterwards. Problem 7 tests (16-21) re-test the tools changed for the backend: list_tickets (new), draft_vendor_order (now queues a vendor_purchase approval) and approve_request (now pays vendor purchases, refusing while the vendor has open invoices); the DB was reset before and after.",
+  "database": "data/campus_customs_new.db",
+  "mcp_config": ".mcp.json",
+  "run_date": "2026-10-14",
+  "desk_date_today": "2026-08-31",
+  "all_tests_passed": true,
+  "tests": [
+    {
+      "test": 1,
+      "prompt": "Use the campus-customs MCP tool check_restock_path to check whether CC-TEE-WHITE size S is in stock for ticket 101 and whether vendor 1 (Bulldog Print Co) can restock it.",
+      "tool_name": "check_restock_path",
+      "mcp_tool_id": "mcp__campus-customs__check_restock_path",
+      "tool_input": {
+        "sku": "CC-TEE-WHITE",
+        "size": "S",
+        "vendor_id": 1
+      },
+      "tool_output": {
+        "today": "2026-08-31",
+        "item": {
+          "sku": "CC-TEE-WHITE",
+          "name": "Classic Bulldog Tee",
+          "size": "S",
+          "qty": 0,
+          "location": "Aisle B"
+        },
+        "in_stock": false,
+        "vendor": {
+          "id": 1,
+          "name": "Bulldog Print Co",
+          "specialty": "apparel reprint",
+          "lead_days": 5
+        },
+        "open_invoices": [
+          {
+            "id": 501,
+            "amount": 840,
+            "due_date": "2026-08-28",
+            "status": "open",
+            "description": "Rush reprint CC-TEE-WHITE S",
+            "days_overdue": 3
+          }
+        ],
+        "vendor_will_ship": false,
+        "eta_if_ordered_today": null,
+        "eta_once_invoices_cleared": "2026-09-05",
+        "note": "Bulldog Print Co will not ship until 1 open invoice(s) are paid."
+      },
+      "claude_final_answer": "**CC-TEE-WHITE size S (Classic Bulldog Tee) is out of stock, and Bulldog Print Co won't restock it right now.**\n\n- **Stock:** 0 on hand (Aisle B).\n- **Vendor:** Bulldog Print Co (vendor 1) does apparel reprints with a 5-day lead time. It won't ship while an invoice is unpaid.\n- **What's blocking it:** Invoice #501 for $840 (\"Rush reprint CC-TEE-WHITE S\") was due 2026-08-28 and is 3 days overdue.\n- **Timing:** No delivery date is possible for an order placed today. If the invoice is paid today, the shirts would arrive around **2026-09-05**.\n\nThe tool's \"today\" is 2026-08-31, which is probably the store's own simulated date. My system clock says 2026-10-14, so the dates above are counted from the store's date.\n\nThe tool doesn't take a ticket number, so this result is for the SKU, size and vendor only. I haven't looked at anything else in ticket 101. To get the shirts restocked, the $840 invoice has to be paid first. I haven't checked whether paying it is allowed under the store's rules or whether there's enough cash. `check_rent_and_cash` can check the cash side if you want that next.",
+      "claude_session_id": "31987d3f-ce4d-4c7e-bf8f-b5eab5d3bd9d",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "desk.date_today = 2026-08-31",
+          "matches_db": true
+        },
+        {
+          "check": "inventory CC-TEE-WHITE/S qty = 0",
+          "matches_db": true
+        },
+        {
+          "check": "vendors[1] = Bulldog Print Co, lead_days 5",
+          "matches_db": true
+        },
+        {
+          "check": "open invoice #501 $840 due 2026-08-28",
+          "matches_db": true
+        },
+        {
+          "check": "ETA = 2026-08-31 + 5 days = 2026-09-05",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 4: original 3 tools (read-only), run 2026-10-14"
+    },
+    {
+      "test": 2,
+      "prompt": "Use the campus-customs MCP tool check_rent_and_cash to check lease 1 for ticket 102: how much rent is due, when, and whether the checking account can cover it.",
+      "tool_name": "check_rent_and_cash",
+      "mcp_tool_id": "mcp__campus-customs__check_rent_and_cash",
+      "tool_input": {
+        "lease_id": 1,
+        "account": "checking"
+      },
+      "tool_output": {
+        "today": "2026-08-31",
+        "lease": {
+          "id": 1,
+          "space_name": "Chapel Street shop",
+          "landlord": "Elm City Properties",
+          "monthly_rent": 2400,
+          "next_due": "2026-09-02",
+          "notes": null
+        },
+        "days_until_due": 2,
+        "cash_account": {
+          "name": "checking",
+          "balance": 3400,
+          "date": "2026-08-31"
+        },
+        "can_cover_rent": true,
+        "balance_after_rent": 1000,
+        "open_invoices_total": 840,
+        "can_cover_rent_and_open_invoices": true,
+        "balance_after_rent_and_open_invoices": 160
+      },
+      "claude_final_answer": "I ran `check_rent_and_cash` on lease 1 for ticket 102. Checking can cover the rent, with $1,000 left over. Paying the open invoices too would leave only $160.\n\n**Lease 1: Chapel Street shop (landlord: Elm City Properties)**\n- **Rent due:** $2,400\n- **Due date:** 2026-09-02, which is 2 days from the shop's current date of 2026-08-31\n\n**Checking account (balance as of 2026-08-31)**\n- **Current balance:** $3,400\n- **After paying rent:** $1,000\n- **Open vendor invoices:** $840\n- **After paying rent and all open invoices:** $160\n\nSo rent alone is fine, but paying everything currently owed would bring checking down to $160.\n\nThe tool only reads the data; it doesn't make payments. The rent payment still needs a person to approve it.",
+      "claude_session_id": "a33b631d-60b4-45ee-8a4d-93d1f545afea",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "leases[1] rent $2400 due 2026-09-02",
+          "matches_db": true
+        },
+        {
+          "check": "cash_accounts checking balance = $3400",
+          "matches_db": true
+        },
+        {
+          "check": "open invoices total = $840",
+          "matches_db": true
+        },
+        {
+          "check": "balance after rent = 3400.0-2400.0 = 1000",
+          "matches_db": true
+        },
+        {
+          "check": "balance after rent + invoices = 160",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 4: original 3 tools (read-only), run 2026-10-14"
+    },
+    {
+      "test": 3,
+      "prompt": "Use the campus-customs MCP tool quote_bulk_order to quote ticket 103: 20 units of CC-HOOD-NAVY size M at a 10% discount.",
+      "tool_name": "quote_bulk_order",
+      "mcp_tool_id": "mcp__campus-customs__quote_bulk_order",
+      "tool_input": {
+        "sku": "CC-HOOD-NAVY",
+        "size": "M",
+        "qty": 20,
+        "discount_pct": 10
+      },
+      "tool_output": {
+        "sku": "CC-HOOD-NAVY",
+        "name": "Basic Hoodie Big Yale",
+        "size": "M",
+        "qty_requested": 20,
+        "qty_on_hand": 8,
+        "shortfall": 12,
+        "unit_cost": 22,
+        "list_price": 58,
+        "list_total": 1160,
+        "discount_pct": 10,
+        "unit_quote": 52.2,
+        "quote_total": 1044,
+        "margin_per_unit": 30.2,
+        "below_cost": false,
+        "max_discount_pct_at_cost": 62.07,
+        "restock_cost_for_shortfall": 264
+      },
+      "claude_final_answer": "Here's the quote for ticket 103: 20 Basic Hoodie Big Yale (CC-HOOD-NAVY), size M, at 10% off.\n\n| | |\n|---|---|\n| List price | $58.00/unit \u2192 $1,160.00 |\n| Quoted price (10% off) | **$52.20/unit \u2192 $1,044.00** |\n| Unit cost | $22.00 |\n| Margin | $30.20/unit ($604 on the order) |\n| Below cost? | No. The discount could go as high as about 62% before the price hits cost. |\n\n**Stock problem:** we only have **8** size M hoodies on hand, so we're **12 short**. Restocking those 12 would cost **$264** at unit cost. That leaves about **$340** of margin on the order, assuming no extra shipping or rush fees.\n\nBefore we confirm this order with the customer, I can run `check_restock_path` to see whether the 12 can arrive in time, and `check_rent_and_cash` to make sure we can afford the $264.",
+      "claude_session_id": "a8367848-3640-45e5-a1fd-3acbeb00731b",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "pricing CC-HOOD-NAVY cost $22 / list $58",
+          "matches_db": true
+        },
+        {
+          "check": "inventory CC-HOOD-NAVY/M qty = 8",
+          "matches_db": true
+        },
+        {
+          "check": "shortfall = 20-8 = 12",
+          "matches_db": true
+        },
+        {
+          "check": "quote = 58.0*0.9*20 = 1044.0",
+          "matches_db": true
+        },
+        {
+          "check": "restock cost = 12*22.0 = 264",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 4: original 3 tools (read-only), run 2026-10-14"
+    },
+    {
+      "test": 4,
+      "prompt": "Use the campus-customs MCP tool list_open_tickets to list every open ticket.",
+      "tool_name": "list_open_tickets",
+      "mcp_tool_id": "mcp__campus-customs__list_open_tickets",
+      "tool_input": {},
+      "tool_output": {
+        "today": "2026-08-31",
+        "tickets": [
+          {
+            "id": 101,
+            "type": "customer_order",
+            "requester": "Tauhid Zaman",
+            "subject": "Bulldog tee",
+            "sku": "CC-TEE-WHITE",
+            "size": "S",
+            "qty": 1,
+            "lease_id": null,
+            "invoice_id": 501,
+            "status": "open",
+            "notes": "Needs a tee in size S.",
+            "created_at": "2026-08-31T09:15:00-04:00"
+          },
+          {
+            "id": 102,
+            "type": "rent_notice",
+            "requester": "Elm City Properties",
+            "subject": "Rent due",
+            "sku": null,
+            "size": null,
+            "qty": null,
+            "lease_id": 1,
+            "invoice_id": null,
+            "status": "open",
+            "notes": "Email: shop rent due in 2 days.",
+            "created_at": "2026-08-31T11:05:00-04:00"
+          },
+          {
+            "id": 103,
+            "type": "price_override",
+            "requester": "Yale AI Club",
+            "subject": "Bulk hoodie discount",
+            "sku": "CC-HOOD-NAVY",
+            "size": "M",
+            "qty": 20,
+            "lease_id": null,
+            "invoice_id": null,
+            "status": "open",
+            "notes": "Student org wants 20 hoodies, size M, asking for a bulk discount.",
+            "created_at": "2026-08-31T16:55:00-04:00"
+          }
+        ]
+      },
+      "claude_final_answer": "There are 3 open tickets, listed oldest first. The system's \"today\" is **2026-08-31**.\n\n| ID | Type | Requester | Subject | Details | Status |\n|---|---|---|---|---|---|\n| **101** | customer_order | Tauhid Zaman | Bulldog tee | `CC-TEE-WHITE`, size S, qty 1, invoice #501. Needs a tee in size S. | open |\n| **102** | rent_notice | Elm City Properties | Rent due | Lease #1. Email says shop rent is due in 2 days. | open |\n| **103** | price_override | Yale AI Club | Bulk hoodie discount | `CC-HOOD-NAVY`, size M, qty 20. Student org wants 20 hoodies and is asking for a bulk discount. | open |\n\nThe system's \"today\" is set to 2026-08-31, about six weeks before the real date (2026-10-14). So \"rent due in 2 days\" on ticket 102 means around 2026-09-02 by the system's date.",
+      "claude_session_id": "bc499599-5ec5-456a-b245-067030e0157e",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "open ticket ids = [101, 102, 103]",
+          "matches_db": true
+        },
+        {
+          "check": "desk.date_today = 2026-08-31",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 5,
+      "prompt": "Use the campus-customs MCP tool get_ticket for ticket 103 and tell me what it links to.",
+      "tool_name": "get_ticket",
+      "mcp_tool_id": "mcp__campus-customs__get_ticket",
+      "tool_input": {
+        "ticket_id": 103
+      },
+      "tool_output": {
+        "today": "2026-08-31",
+        "ticket": {
+          "id": 103,
+          "type": "price_override",
+          "requester": "Yale AI Club",
+          "subject": "Bulk hoodie discount",
+          "sku": "CC-HOOD-NAVY",
+          "size": "M",
+          "qty": 20,
+          "lease_id": null,
+          "invoice_id": null,
+          "status": "open",
+          "notes": "Student org wants 20 hoodies, size M, asking for a bulk discount.",
+          "created_at": "2026-08-31T16:55:00-04:00"
+        },
+        "inventory_all_sizes": [
+          {
+            "size": "L",
+            "qty": 14,
+            "location": "Aisle A"
+          },
+          {
+            "size": "M",
+            "qty": 8,
+            "location": "Aisle A"
+          },
+          {
+            "size": "S",
+            "qty": 4,
+            "location": "Aisle A"
+          },
+          {
+            "size": "XL",
+            "qty": 6,
+            "location": "Aisle A"
+          }
+        ],
+        "pricing": {
+          "sku": "CC-HOOD-NAVY",
+          "unit_cost": 22,
+          "list_price": 58
+        },
+        "notes": [],
+        "approvals": [],
+        "drafts": []
+      },
+      "claude_final_answer": "Ticket 103 is linked only to a product, **SKU `CC-HOOD-NAVY`** (the navy hoodie). It has no lease (`lease_id: null`) and no invoice (`invoice_id: null`).\n\n**The ticket**\n- **Type:** price_override (status: open)\n- **Requester:** Yale AI Club\n- **Subject:** Bulk hoodie discount\n- **Request:** 20 hoodies in size M, with a bulk discount\n- **Created:** 2026-08-31 16:55 ET\n\n**What the SKU link pulls in**\n- **Pricing:** costs $22 per unit, lists at $58\n- **Inventory, all in Aisle A:**\n\n| Size | Qty |\n|---|---|\n| S | 4 |\n| M | 8 |\n| L | 14 |\n| XL | 6 |\n\n**Work already done on it:** nothing yet. There are no notes, approval requests or drafts.\n\nThere are only 8 size M hoodies in stock and the club wants 20, so they're 12 short. That has to be dealt with along with the discount.",
+      "claude_session_id": "2719392f-0144-49b1-a730-9a2b32a7071b",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "inventory CC-HOOD-NAVY sizes [('L', 14), ('M', 8), ('S', 4), ('XL', 6)]",
+          "matches_db": true
+        },
+        {
+          "check": "pricing cost $22.0 / list $58.0",
+          "matches_db": true
+        },
+        {
+          "check": "ticket 103 is price_override, qty 20, size M",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 6,
+      "prompt": "Use the campus-customs MCP tool list_vendors and tell me which vendors will ship right now.",
+      "tool_name": "list_vendors",
+      "mcp_tool_id": "mcp__campus-customs__list_vendors",
+      "tool_input": {},
+      "tool_output": {
+        "today": "2026-08-31",
+        "vendors": [
+          {
+            "id": 1,
+            "name": "Bulldog Print Co",
+            "specialty": "apparel reprint",
+            "lead_days": 5,
+            "open_invoices": [
+              {
+                "id": 501,
+                "amount": 840,
+                "due_date": "2026-08-28",
+                "description": "Rush reprint CC-TEE-WHITE S"
+              }
+            ],
+            "will_ship": false
+          },
+          {
+            "id": 2,
+            "name": "Elm City Gifts",
+            "specialty": "mugs and small goods",
+            "lead_days": 3,
+            "open_invoices": [],
+            "will_ship": true
+          },
+          {
+            "id": 3,
+            "name": "QuickShip CT",
+            "specialty": "local courier",
+            "lead_days": 1,
+            "open_invoices": [],
+            "will_ship": true
+          }
+        ]
+      },
+      "claude_final_answer": "Two of the three vendors will ship right now:\n\n| Vendor | Specialty | Lead time | Open invoices | Will ship? |\n|---|---|---|---|---|\n| **Elm City Gifts** | Mugs and small goods | 3 days | None | \u2705 Yes |\n| **QuickShip CT** | Local courier | 1 day | None | \u2705 Yes |\n| Bulldog Print Co | Apparel reprint | 5 days | #501, $840, due 2026-08-28 | \u274c No |\n\nBulldog Print Co won't ship because invoice #501 ($840, for a rush reprint of CC-TEE-WHITE S) is past due. So you can't restock apparel through them until that invoice is paid. Paying it would need to go through the payment-approval step.\n\nThe tool gives today's date as **2026-08-31**, not today's real date (2026-10-14). The overdue status above is judged against Aug 31, so vendor status may differ if the database is supposed to show current data.",
+      "claude_session_id": "2c57d2f0-4fe8-424a-b57b-5d9bfbac1fe6",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "Bulldog Print Co: lead 5d, 1 open invoice(s), will_ship=False",
+          "matches_db": true
+        },
+        {
+          "check": "Elm City Gifts: lead 3d, 0 open invoice(s), will_ship=True",
+          "matches_db": true
+        },
+        {
+          "check": "QuickShip CT: lead 1d, 0 open invoice(s), will_ship=True",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 7,
+      "prompt": "Use the campus-customs MCP tool update_ticket on ticket 101 with author 'inventory', status 'in_progress', and note 'Smoke test: CC-TEE-WHITE S has 0 on hand; restock from Bulldog is blocked by invoice #501.'",
+      "tool_name": "update_ticket",
+      "mcp_tool_id": "mcp__campus-customs__update_ticket",
+      "tool_input": {
+        "ticket_id": 101,
+        "author": "inventory",
+        "status": "in_progress",
+        "note": "Smoke test: CC-TEE-WHITE S has 0 on hand; restock from Bulldog is blocked by invoice #501."
+      },
+      "tool_output": {
+        "ok": true,
+        "ticket": {
+          "id": 101,
+          "status": "in_progress"
+        }
+      },
+      "claude_final_answer": "Ticket 101 is now `in_progress`, and your note is on it under author `inventory`: \"Smoke test: CC-TEE-WHITE S has 0 on hand; restock from Bulldog is blocked by invoice #501.\"",
+      "claude_session_id": "5f212e99-6393-43c9-b4b9-255754aba149",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "tickets[101].status = in_progress",
+          "matches_db": true
+        },
+        {
+          "check": "ticket_notes row written by inventory",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 8,
+      "prompt": "Use the campus-customs MCP tool request_payment_approval with kind 'invoice', ref_id 501, ticket_id 101, requested_by 'accounting', reason 'Smoke test: invoice #501 is overdue and blocks the tee reprint for ticket 101.'",
+      "tool_name": "request_payment_approval",
+      "mcp_tool_id": "mcp__campus-customs__request_payment_approval",
+      "tool_input": {
+        "kind": "invoice",
+        "ref_id": 501,
+        "ticket_id": 101,
+        "requested_by": "accounting",
+        "reason": "Smoke test: invoice #501 is overdue and blocks the tee reprint for ticket 101."
+      },
+      "tool_output": {
+        "ok": true,
+        "approval_id": 1,
+        "status": "pending human approval",
+        "kind": "invoice_payment",
+        "payee": "Bulldog Print Co",
+        "amount": 840,
+        "checking_balance": 3400,
+        "projected_balance_if_all_pending_approved": 2560,
+        "warning": null
+      },
+      "claude_final_answer": "The smoke test worked. The tool queued payment approval request **#1**, and it's now waiting for a person to approve it. No money has moved.\n\n| Field | Value |\n|---|---|\n| Approval ID | 1 |\n| Payee | Bulldog Print Co |\n| Amount | $840 |\n| Checking balance | $3,400 |\n| Balance if all pending payments are approved | $2,560 |\n| Warning | none |\n\nRequest #1 stays pending until someone approves or rejects it. Since this was a test, you may want to reject it so it doesn't get paid by accident.",
+      "claude_session_id": "0c32695e-5762-4ea2-930c-0643ea851c7a",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "approvals[1] invoice_payment $840.0 to Bulldog Print Co, pending",
+          "matches_db": true
+        },
+        {
+          "check": "projected = 3400.0 - 840.0 = 2560.0",
+          "matches_db": true
+        },
+        {
+          "check": "no payment row created",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 9,
+      "prompt": "Use the campus-customs MCP tool request_price_override for ticket 103: sku CC-HOOD-NAVY, size M, qty 20, discount_pct 15, requested_by 'boss', reason 'Smoke test: bulk discount for Yale AI Club.'",
+      "tool_name": "request_price_override",
+      "mcp_tool_id": "mcp__campus-customs__request_price_override",
+      "tool_input": {
+        "ticket_id": 103,
+        "sku": "CC-HOOD-NAVY",
+        "size": "M",
+        "qty": 20,
+        "discount_pct": 15,
+        "requested_by": "boss",
+        "reason": "Smoke test: bulk discount for Yale AI Club."
+      },
+      "tool_output": {
+        "ok": true,
+        "approval_id": 2,
+        "status": "pending human approval",
+        "quote": {
+          "sku": "CC-HOOD-NAVY",
+          "name": "Basic Hoodie Big Yale",
+          "size": "M",
+          "qty_requested": 20,
+          "qty_on_hand": 8,
+          "shortfall": 12,
+          "unit_cost": 22,
+          "list_price": 58,
+          "list_total": 1160,
+          "discount_pct": 15,
+          "unit_quote": 49.3,
+          "quote_total": 986,
+          "margin_per_unit": 27.3,
+          "below_cost": false,
+          "max_discount_pct_at_cost": 62.07,
+          "restock_cost_for_shortfall": 264
+        }
+      },
+      "claude_final_answer": "The price override request went through. It's queued as **approval #2** with status **pending human approval**, so nothing has been charged.\n\n| Item | Value |\n|---|---|\n| Item | CC-HOOD-NAVY \"Basic Hoodie Big Yale\", size M \u00d7 20 |\n| List price | $58.00/unit \u2192 $1,160 |\n| 15% off | **$49.30/unit \u2192 $986** |\n| Unit cost | $22.00 |\n| Margin | $27.30/unit (not below cost; the most you could discount and still break even is 62.07%) |\n| **Stock** | **Only 8 on hand, so 12 short.** Restocking those 12 would cost $264. |\n\n**Prompt log:** I couldn't log this as Prompt 15 under Problem 5 in `AI_prompts.md`. Writing to and reading that file both need your approval, because the folder name has a trailing space that triggers a path-safety check. Approve the edit when asked, or paste this in yourself:\n\n```\n### Prompt 15\n\n> Use the campus-customs MCP tool request_price_override for ticket 103: sku CC-HOOD-NAVY, size M, qty 20, discount_pct 15, requested_by 'boss', reason 'Smoke test: bulk discount for Yale AI Club.'\n```\n\n**Next steps:**\n- **Approval:** approval #2 is waiting for a human decision. You can approve or reject it from the dashboard or with `approve_request` / `reject_request`.\n- **Stock shortfall:** you can only fill 20 hoodies after restocking. `check_restock_path` will show the vendor options and lead time.",
+      "claude_session_id": "49167726-a814-4178-9191-a4ca71b46acc",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "approvals[2] price_override total = 58*0.85*20 = 986.0",
+          "matches_db": true
+        },
+        {
+          "check": "unit quote 49.3 >= unit_cost 22.0",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 10,
+      "prompt": "Use the campus-customs MCP tool draft_message for ticket 101: channel 'email', recipient 'Tauhid Zaman', subject 'Your Bulldog tee order', body 'Hi Tauhid, size S of the Classic Bulldog Tee is out of stock right now; sizes M, L and XL are available. We will follow up with a restock date.', author 'customer_service'.",
+      "tool_name": "draft_message",
+      "mcp_tool_id": "mcp__campus-customs__draft_message",
+      "tool_input": {
+        "ticket_id": 101,
+        "channel": "email",
+        "recipient": "Tauhid Zaman",
+        "subject": "Your Bulldog tee order",
+        "body": "Hi Tauhid, size S of the Classic Bulldog Tee is out of stock right now; sizes M, L and XL are available. We will follow up with a restock date.",
+        "author": "customer_service"
+      },
+      "tool_output": {
+        "ok": true,
+        "draft_id": 1,
+        "status": "draft (not sent)"
+      },
+      "claude_final_answer": "I saved the email to Tauhid Zaman for ticket 101 as a draft (draft ID 1). It has not been sent. Someone has to review it on the dashboard first.\n\n- **Channel:** email\n- **Subject:** Your Bulldog tee order\n- **Author:** customer_service\n- **Body:** \"Hi Tauhid, size S of the Classic Bulldog Tee is out of stock right now; sizes M, L and XL are available. We will follow up with a restock date.\"",
+      "claude_session_id": "428e08d7-7dee-4885-bc46-9175c12141a5",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "drafts[1] email to Tauhid Zaman, status draft",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 11,
+      "prompt": "Use the campus-customs MCP tool draft_vendor_order for ticket 103: vendor_id 1, sku CC-HOOD-NAVY, size M, qty 12, author 'inventory'.",
+      "tool_name": "draft_vendor_order",
+      "mcp_tool_id": "mcp__campus-customs__draft_vendor_order",
+      "tool_input": {
+        "ticket_id": 103,
+        "vendor_id": 1,
+        "sku": "CC-HOOD-NAVY",
+        "size": "M",
+        "qty": 12,
+        "author": "inventory"
+      },
+      "tool_output": {
+        "ok": true,
+        "draft_id": 2,
+        "status": "blocked (vendor has open invoices)",
+        "vendor": "Bulldog Print Co",
+        "estimated_cost": 264,
+        "eta": "2026-09-05",
+        "projected_balance_after_pending_payments": 2560,
+        "cost_exceeds_projected_cash": false
+      },
+      "claude_final_answer": "I created draft vendor order #2 for ticket 103, but it's **blocked** because Bulldog Print Co has open invoices and won't ship until they're paid. Nothing was sent to the vendor.\n\n| Field | Value |\n|---|---|\n| Vendor | Bulldog Print Co (id 1) |\n| Item | CC-HOOD-NAVY, size M \u00d7 12 |\n| Estimated cost | $264 |\n| ETA | 2026-09-05 |\n| Projected balance after pending payments | $2,560 (the order fits within cash) |\n\nThe ETA is before today's real date because the tool counts from the database's \"today\" (`desk.date_today`), not the actual calendar date.\n\nTo unblock the order, the open Bulldog invoices have to be paid. `request_payment_approval` can start that if you want.",
+      "claude_session_id": "32472085-7cbe-4818-bcce-60c3a36d3169",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "drafts[2] vendor_order to Bulldog Print Co status blocked (invoice #501 open)",
+          "matches_db": true
+        },
+        {
+          "check": "estimated cost = 12 * 22 = 264.0",
+          "matches_db": true
+        },
+        {
+          "check": "ETA = 2026-08-31 + 5 = 2026-09-05",
+          "matches_db": true
+        },
+        {
+          "check": "projected cash = 3400.0 - 840.0 = 2560.0",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 12,
+      "prompt": "Use the campus-customs MCP tool get_board and summarize cash, pending approvals and drafts.",
+      "tool_name": "get_board",
+      "mcp_tool_id": "mcp__campus-customs__get_board",
+      "tool_input": {},
+      "tool_output": {
+        "today": "2026-08-31",
+        "cash_accounts": [
+          {
+            "name": "checking",
+            "balance": 3400,
+            "date": "2026-08-31"
+          }
+        ],
+        "pending_payments_total": 840,
+        "projected_balance": 2560,
+        "pending_approvals": [
+          {
+            "id": 1,
+            "ticket_id": 101,
+            "kind": "invoice_payment",
+            "ref_id": 501,
+            "payee": "Bulldog Print Co",
+            "amount": 840,
+            "details": "Invoice #501 to Bulldog Print Co: Rush reprint CC-TEE-WHITE S (due 2026-08-28). Reason: Smoke test: invoice #501 is overdue and blocks the tee reprint for ticket 101.",
+            "requested_by": "accounting",
+            "status": "pending",
+            "created_at": "2026-10-14T18:18:48+00:00",
+            "decided_by": null,
+            "decided_at": null,
+            "decision_note": null,
+            "payment_id": null
+          },
+          {
+            "id": 2,
+            "ticket_id": 103,
+            "kind": "price_override",
+            "ref_id": null,
+            "payee": null,
+            "amount": 986,
+            "details": "20 x CC-HOOD-NAVY M at 15.0% off: $49.30/unit, $986.00 total (list $1160.00); 8 on hand, 12 short. Reason: Smoke test: bulk discount for Yale AI Club.",
+            "requested_by": "boss",
+            "status": "pending",
+            "created_at": "2026-10-14T18:19:02+00:00",
+            "decided_by": null,
+            "decided_at": null,
+            "decision_note": null,
+            "payment_id": null
+          }
+        ],
+        "decided_approvals": [],
+        "drafts": [
+          {
+            "id": 1,
+            "ticket_id": 101,
+            "channel": "email",
+            "recipient": "Tauhid Zaman",
+            "subject": "Your Bulldog tee order",
+            "body": "Hi Tauhid, size S of the Classic Bulldog Tee is out of stock right now; sizes M, L and XL are available. We will follow up with a restock date.",
+            "author": "customer_service",
+            "status": "draft",
+            "created_at": "2026-10-14T18:19:35+00:00"
+          },
+          {
+            "id": 2,
+            "ticket_id": 103,
+            "channel": "vendor_order",
+            "recipient": "Bulldog Print Co",
+            "subject": "Restock CC-HOOD-NAVY M x12",
+            "body": "Order 12 x Basic Hoodie Big Yale (CC-HOOD-NAVY, size M) at $22.00/unit, est. $264.00. Lead time 5 days; ETA 2026-09-05 if placed today (2026-08-31). BLOCKED: Bulldog Print Co will not ship until open invoice(s) #501 are paid.",
+            "author": "inventory",
+            "status": "blocked",
+            "created_at": "2026-10-14T18:19:49+00:00"
+          }
+        ],
+        "payments": []
+      },
+      "claude_final_answer": "The board shows $3,400 in checking. Two requests are waiting for a decision, and a vendor restock order is blocked by an unpaid invoice.\n\n**Cash** (board date 2026-08-31; the simulation runs on its own date, not today's)\n- Checking: **$3,400**\n- Pending payments: **$840**\n- Projected balance if everything queued is approved: **$2,560**\n\n**Pending approvals (2)**\n| # | Ticket | Type | Details | Amount | Requested by |\n|---|---|---|---|---|---|\n| 1 | 101 | Invoice payment | Pay Bulldog Print Co invoice #501 (rush reprint of white tee, size S). It was due 2026-08-28, so it's overdue. | $840 | accounting |\n| 2 | 103 | Price override | 20 \u00d7 navy hoodie M at 15% off for Yale AI Club: $49.30/unit, $986 total instead of $1,160. 8 on hand, 12 short. | $986 (revenue, not a payment) | boss |\n\n**Drafts (2)**\n1. **Ticket 101, email to Tauhid Zaman (status: draft):** Size S of the Classic Bulldog Tee is out of stock, while M, L and XL are available. The email says a restock date will follow.\n2. **Ticket 103, vendor order to Bulldog Print Co (status: blocked):** 12 \u00d7 navy hoodie M at $22 each, about $264, with a 5-day lead time. The vendor won't ship until invoice #501 is paid.\n\n**What's blocking things:** Approving the $840 invoice payment (#1) unblocks the hoodie restock for ticket 103, and likely the tee reprint for ticket 101 too. If the $264 order also goes out, projected cash drops to about $2,296.\n\nNo approvals have been decided and no payments have been made. Every request's reason starts with \"Smoke test,\" so this looks like test data.",
+      "claude_session_id": "b69a32b3-f059-4d07-851a-4002bea37cf9",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "checking balance = 3400.0",
+          "matches_db": true
+        },
+        {
+          "check": "2 pending approvals, 2 drafts",
+          "matches_db": true
+        },
+        {
+          "check": "projected balance = 3400.0 - 840.0 = 2560.0",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 13,
+      "prompt": "Use the campus-customs MCP tool approve_request with approval_id 1 and approver 'accounting'. This is a smoke test of the guardrail; I expect it to be refused because an agent name is not a human approver.",
+      "tool_name": "approve_request",
+      "mcp_tool_id": "mcp__campus-customs__approve_request",
+      "tool_input": {
+        "approval_id": 1,
+        "approver": "accounting",
+        "note": "Smoke test of the guardrail: an agent name used as approver should be rejected"
+      },
+      "tool_output": {
+        "error": "approve_request needs a human approver name, not an agent."
+      },
+      "claude_final_answer": "The guardrail held. Calling `approve_request` with `approval_id=1` and `approver='accounting'` was refused with this error:\n\n```\napprove_request needs a human approver name, not an agent.\n```\n\nBecause the call was refused, approval #1 should still be pending and no payment was recorded. I didn't check this; `get_board` would show it.",
+      "claude_session_id": "1a03de3f-a453-4ae0-b9eb-880217dffb10",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "refused: agent name is not a human approver",
+          "matches_db": true
+        },
+        {
+          "check": "approval #1 still pending",
+          "matches_db": true
+        },
+        {
+          "check": "no payment row; balance still 3400",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 14,
+      "prompt": "Use the campus-customs MCP tool approve_request with approval_id 1, approver 'Teddy Kennedy', note 'Smoke test: human owner approves paying invoice #501.' I am the human owner and I approve this payment for the test.",
+      "tool_name": "approve_request",
+      "mcp_tool_id": "mcp__campus-customs__approve_request",
+      "tool_input": {
+        "approval_id": 1,
+        "approver": "Teddy Kennedy",
+        "note": "Smoke test: human owner approves paying invoice #501."
+      },
+      "tool_output": {
+        "ok": true,
+        "approval_id": 1,
+        "kind": "invoice_payment",
+        "payment_id": 1,
+        "checking_balance": 2560
+      },
+      "claude_final_answer": "I ran approval #1 under your name, Teddy Kennedy, and the payment went through.\n\n- **What happened:** Invoice #501 is now marked paid, and the payment was recorded as payment #1.\n- **Checking balance afterward:** $2,560.\n\nThis was a real write to the Campus Customs database, not a dry run. The invoice is now paid and the money is out of checking. If you need to run the smoke test again from scratch, you'll have to reset or re-copy the database first.",
+      "claude_session_id": "96a12e1e-30da-4d73-a09d-a6b95f4bc943",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "payments row: invoice 501, $840.0, approved_by Teddy Kennedy",
+          "matches_db": true
+        },
+        {
+          "check": "checking = 3400 - 840 = 2560.0",
+          "matches_db": true
+        },
+        {
+          "check": "invoices[501].status = paid",
+          "matches_db": true
+        },
+        {
+          "check": "approvals[1].status = approved",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 15,
+      "prompt": "Use the campus-customs MCP tool reject_request with approval_id 2, approver 'Teddy Kennedy', note 'Smoke test: discount declined.'",
+      "tool_name": "reject_request",
+      "mcp_tool_id": "mcp__campus-customs__reject_request",
+      "tool_input": {
+        "approval_id": 2,
+        "approver": "Teddy Kennedy",
+        "note": "Smoke test: discount declined."
+      },
+      "tool_output": {
+        "ok": true,
+        "approval_id": 2,
+        "status": "rejected"
+      },
+      "claude_final_answer": "Approval #2 is now rejected. The tool returned `ok: true`, `status: \"rejected\"`, recorded with approver \"Teddy Kennedy\" and the note \"Smoke test: discount declined.\" According to the tool's description, a rejection doesn't pay or change anything.\n\nThis tool is marked \"HUMAN ONLY.\" I ran it because you asked for it directly and named yourself as the approver. When the agents run on their own, they shouldn't call it.",
+      "claude_session_id": "5de721a2-59af-43ed-8ce1-f1c55d9c6c5b",
+      "claude_code_version": "2.1.299",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "approvals[2].status = rejected by Teddy Kennedy",
+          "matches_db": true
+        },
+        {
+          "check": "no extra payment; balance still 2560",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 5: 11 new tools, run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 16,
+      "prompt": "Use the campus-customs MCP tool list_tickets to list every ticket with its status.",
+      "tool_name": "list_tickets",
+      "mcp_tool_id": "mcp__campus-customs__list_tickets",
+      "tool_input": {},
+      "tool_output": {
+        "today": "2026-08-31",
+        "tickets": [
+          {
+            "id": 101,
+            "type": "customer_order",
+            "requester": "Tauhid Zaman",
+            "subject": "Bulldog tee",
+            "sku": "CC-TEE-WHITE",
+            "size": "S",
+            "qty": 1,
+            "lease_id": null,
+            "invoice_id": 501,
+            "status": "open",
+            "notes": "Needs a tee in size S.",
+            "created_at": "2026-08-31T09:15:00-04:00"
+          },
+          {
+            "id": 102,
+            "type": "rent_notice",
+            "requester": "Elm City Properties",
+            "subject": "Rent due",
+            "sku": null,
+            "size": null,
+            "qty": null,
+            "lease_id": 1,
+            "invoice_id": null,
+            "status": "open",
+            "notes": "Email: shop rent due in 2 days.",
+            "created_at": "2026-08-31T11:05:00-04:00"
+          },
+          {
+            "id": 103,
+            "type": "price_override",
+            "requester": "Yale AI Club",
+            "subject": "Bulk hoodie discount",
+            "sku": "CC-HOOD-NAVY",
+            "size": "M",
+            "qty": 20,
+            "lease_id": null,
+            "invoice_id": null,
+            "status": "open",
+            "notes": "Student org wants 20 hoodies, size M, asking for a bulk discount.",
+            "created_at": "2026-08-31T16:55:00-04:00"
+          }
+        ]
+      },
+      "claude_final_answer": "There are 3 tickets in the system, and all of them are open:\n\n| ID | Type | Requester | Subject | Details | Status |\n|---|---|---|---|---|---|\n| 101 | customer_order | Tauhid Zaman | Bulldog tee | 1 \u00d7 CC-TEE-WHITE, size S (invoice 501) | **open** |\n| 102 | rent_notice | Elm City Properties | Rent due | Lease 1; the email says shop rent is due in 2 days | **open** |\n| 103 | price_override | Yale AI Club | Bulk hoodie discount | 20 \u00d7 CC-HOOD-NAVY, size M; they're asking for a bulk discount | **open** |\n\nThe system's date is 2026-08-31, not today's date (2026-10-14). So \"rent due in 2 days\" on ticket 102 means 2026-09-02 in the system's timeline.",
+      "claude_session_id": "29049e8b-f923-4b82-ab7d-5405aa649bb8",
+      "claude_code_version": "2.1.300",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "tickets (id, status) = [(101, 'open'), (102, 'open'), (103, 'open')]",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 7: new/changed tools (list_tickets, draft_vendor_order purchase approval, approve_request for purchases), run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 17,
+      "prompt": "Use the campus-customs MCP tool draft_vendor_order for ticket 103: vendor_id 1, sku CC-HOOD-NAVY, size M, qty 12, author 'inventory'. Tell me the purchase approval id it queued.",
+      "tool_name": "draft_vendor_order",
+      "mcp_tool_id": "mcp__campus-customs__draft_vendor_order",
+      "tool_input": {
+        "ticket_id": 103,
+        "vendor_id": 1,
+        "sku": "CC-HOOD-NAVY",
+        "size": "M",
+        "qty": 12,
+        "author": "inventory"
+      },
+      "tool_output": {
+        "ok": true,
+        "draft_id": 1,
+        "purchase_approval_id": 1,
+        "status": "blocked (vendor has open invoices)",
+        "vendor": "Bulldog Print Co",
+        "estimated_cost": 264,
+        "eta": "2026-09-05",
+        "projected_balance_after_pending_payments": 3400,
+        "projected_balance_if_purchase_approved": 3136,
+        "cost_exceeds_projected_cash": false
+      },
+      "claude_final_answer": "The draft went in, and the purchase approval ID it queued is **1**. It's **blocked**, though: Bulldog Print Co (vendor 1) has open invoices, so approval 1 can't be approved until those are paid.\n\n- **Draft ID:** 1 (ticket 103, 12 \u00d7 CC-HOOD-NAVY, size M)\n- **Estimated cost:** $264\n- **ETA:** 2026-09-05. This is the shop's simulated \"today\" plus the vendor's lead time, not a real calendar date.\n- **Cash:** About $3,400 projected after pending payments, and about $3,136 if this purchase is also approved. That covers the cost.\n\nThe vendor hasn't been contacted and no money has moved. Next step is to pay Bulldog's open invoices, then approve purchase approval 1.",
+      "claude_session_id": "2b4d68ba-b473-42fb-870e-03d3d716a37a",
+      "claude_code_version": "2.1.300",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "drafts[1] vendor_order to Bulldog, status blocked (invoice #501 open)",
+          "matches_db": true
+        },
+        {
+          "check": "approvals[1] vendor_purchase $264.0 ref draft 1, pending",
+          "matches_db": true
+        },
+        {
+          "check": "projected if approved = 3400.0 - 264.0 = 3136.0",
+          "matches_db": true
+        },
+        {
+          "check": "no payment row; cash unchanged at 3400",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 7: new/changed tools (list_tickets, draft_vendor_order purchase approval, approve_request for purchases), run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 18,
+      "prompt": "Use the campus-customs MCP tool approve_request with approval_id 1, approver 'Teddy Kennedy', note 'Smoke test: try to approve the hoodie purchase while Bulldog still has an open invoice.' I am the human owner; I expect this to be refused because the vendor is blocked.",
+      "tool_name": "approve_request",
+      "mcp_tool_id": "mcp__campus-customs__approve_request",
+      "tool_input": {
+        "approval_id": 1,
+        "approver": "Teddy Kennedy",
+        "note": "Smoke test: try to approve the hoodie purchase while Bulldog still has an open invoice."
+      },
+      "tool_output": {
+        "error": "Refused: Bulldog Print Co won't ship while invoice(s) #501 are open. Approve those first.",
+        "approval_id": 1
+      },
+      "claude_final_answer": "The approval was refused, as you expected.\n\n**Result:** `Refused: Bulldog Print Co won't ship while invoice(s) #501 are open. Approve those first.` (approval_id 1)\n\nThe vendor-block rule worked: no payment was recorded, no cash was deducted, and the hoodie vendor order is still unapproved. To get the purchase through, pay invoice #501 first by approving its payment request, then approve request 1 again.",
+      "claude_session_id": "fb377506-4b78-4787-a3d5-9e75b5a0fa15",
+      "claude_code_version": "2.1.300",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "refused: Bulldog blocked by open invoice #501",
+          "matches_db": true
+        },
+        {
+          "check": "purchase approval #1 still pending; no payment; cash 3400",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 7: new/changed tools (list_tickets, draft_vendor_order purchase approval, approve_request for purchases), run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 19,
+      "prompt": "Use the campus-customs MCP tool request_payment_approval with kind 'invoice', ref_id 501, ticket_id 101, requested_by 'accounting', reason 'Smoke test: pay invoice #501 to unblock Bulldog.'",
+      "tool_name": "request_payment_approval",
+      "mcp_tool_id": "mcp__campus-customs__request_payment_approval",
+      "tool_input": {
+        "kind": "invoice",
+        "ref_id": 501,
+        "ticket_id": 101,
+        "requested_by": "accounting",
+        "reason": "Smoke test: pay invoice #501 to unblock Bulldog."
+      },
+      "tool_output": {
+        "ok": true,
+        "approval_id": 2,
+        "status": "pending human approval",
+        "kind": "invoice_payment",
+        "payee": "Bulldog Print Co",
+        "amount": 840,
+        "checking_balance": 3400,
+        "projected_balance_if_all_pending_approved": 2296,
+        "warning": null
+      },
+      "claude_final_answer": "The request went through. Payment of invoice #501 is now **approval #2** in the queue, waiting for a person to approve it. No money has been paid yet.\n\n- **Payee:** Bulldog Print Co\n- **Amount:** $840\n- **Checking balance:** $3,400\n- **Projected balance if every pending payment is approved:** $2,296\n- **Warning:** none\n\nThe projected balance is $264 lower than $3,400 minus this $840. That means at least one other payment is already pending, probably approval #1.\n\nSince this was a smoke test, approval #2 is a real item in the queue. Before anyone approves it, decide whether the $840 should actually be paid; if not, reject it with `reject_request`.",
+      "claude_session_id": "7ecd7292-cce6-4ed1-9076-84ece1bb7ea2",
+      "claude_code_version": "2.1.300",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "approvals[2] invoice_payment $840 to Bulldog, pending",
+          "matches_db": true
+        },
+        {
+          "check": "projected = 3400 - 264 - 840 = 2296 (purchase + invoice pending)",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 7: new/changed tools (list_tickets, draft_vendor_order purchase approval, approve_request for purchases), run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 20,
+      "prompt": "Use the campus-customs MCP tool approve_request with approval_id 2, approver 'Teddy Kennedy', note 'Smoke test: human owner approves paying invoice #501.' I am the human owner and approve this payment for the test.",
+      "tool_name": "approve_request",
+      "mcp_tool_id": "mcp__campus-customs__approve_request",
+      "tool_input": {
+        "approval_id": 2,
+        "approver": "Teddy Kennedy",
+        "note": "Smoke test: human owner approves paying invoice #501."
+      },
+      "tool_output": {
+        "ok": true,
+        "approval_id": 2,
+        "kind": "invoice_payment",
+        "payment_id": 1,
+        "checking_balance": 2560
+      },
+      "claude_final_answer": "I ran approval #2 under your name and it went through, so invoice #501 is paid.\n\n- **Approver recorded:** Teddy Kennedy, with your smoke-test note attached\n- **Type:** invoice payment\n- **Payment ID:** 1\n- **Checking balance after payment:** $2,560",
+      "claude_session_id": "21a8c1fe-bb2b-49d9-ab0c-807f006d6322",
+      "claude_code_version": "2.1.300",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "checking = 3400 - 840 = 2560.0",
+          "matches_db": true
+        },
+        {
+          "check": "invoices[501].status = paid",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 7: new/changed tools (list_tickets, draft_vendor_order purchase approval, approve_request for purchases), run in order on one DB state, 2026-10-14"
+    },
+    {
+      "test": 21,
+      "prompt": "Use the campus-customs MCP tool approve_request with approval_id 1, approver 'Teddy Kennedy', note 'Smoke test: human owner approves the 12-hoodie purchase now that Bulldog is unblocked.' I am the human owner and approve this purchase for the test.",
+      "tool_name": "approve_request",
+      "mcp_tool_id": "mcp__campus-customs__approve_request",
+      "tool_input": {
+        "approval_id": 1,
+        "approver": "Teddy Kennedy",
+        "note": "Smoke test: human owner approves the 12-hoodie purchase now that Bulldog is unblocked."
+      },
+      "tool_output": {
+        "ok": true,
+        "approval_id": 1,
+        "kind": "vendor_purchase",
+        "payment_id": 2,
+        "checking_balance": 2296
+      },
+      "claude_final_answer": "I approved request #1 as Teddy Kennedy with your note, and the server accepted it.\n\n- **Type:** a vendor purchase (the 12 hoodies)\n- **Payment ID:** 2\n- **Checking balance after payment:** $2,296\n\nThe system only allows a vendor purchase while that vendor has no open invoices, so this going through confirms Bulldog is now unblocked.",
+      "claude_session_id": "6815b7c5-2da0-447b-9a88-ee65e87da6a4",
+      "claude_code_version": "2.1.300",
+      "model": "claude-opus-5-5",
+      "mcp_server_status": "connected",
+      "db_verification": [
+        {
+          "check": "payments row kind=purchase $264.0 approved_by Teddy Kennedy",
+          "matches_db": true
+        },
+        {
+          "check": "checking = 2560 - 264 = 2296.0",
+          "matches_db": true
+        },
+        {
+          "check": "drafts[1].status = approved; approvals[1].status = approved",
+          "matches_db": true
+        }
+      ],
+      "all_values_match_db": true,
+      "phase": "Problem 7: new/changed tools (list_tickets, draft_vendor_order purchase approval, approve_request for purchases), run in order on one DB state, 2026-10-14"
+    }
+  ],
+  "tools_covered": [
+    "approve_request",
+    "check_rent_and_cash",
+    "check_restock_path",
+    "draft_message",
+    "draft_vendor_order",
+    "get_board",
+    "get_ticket",
+    "list_open_tickets",
+    "list_tickets",
+    "list_vendors",
+    "quote_bulk_order",
+    "reject_request",
+    "request_payment_approval",
+    "request_price_override",
+    "update_ticket"
+  ],
+  "db_reset_after_tests": true
+}

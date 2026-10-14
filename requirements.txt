@@ -1,0 +1,8 @@
+pydantic-ai-slim[openai,mcp]>=1.0
+fastmcp>=2.0
+python-dotenv>=1.0
+fastapi>=0.115
+uvicorn>=0.30
+watchfiles>=0.21  # fast --reload; uvicorn[standard] is avoided because uvloop hangs the MCP stdio subprocess
+# Newer cryptography releases lack prebuilt wheels for Intel Macs
+cryptography<49

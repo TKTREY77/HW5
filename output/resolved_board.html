@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campus Customs: Resolved Board</title>
+<style>
+  :root { --navy:#14213d; --ink:#1f2433; --muted:#6b6f7b; --line:#e2dccf; --desk:#e7e1d5; --paper:#fffdf8; --ok:#1f7a4d; --bad:#b3261e; --gold:#f4d58d; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--desk); }
+  header { background:var(--navy); color:#fff; padding:24px 32px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; color:#b8c2d8; font-size:13.5px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .chips span { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:99px; padding:3px 11px; font-size:12.5px; }
+  .chips b { color:var(--gold); }
+  main { max-width:1180px; margin:0 auto; padding:26px 32px 60px; }
+  nav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px; }
+  nav a { background:var(--paper); border:1px solid var(--line); border-radius:99px; padding:5px 14px; color:var(--navy); text-decoration:none; font-weight:600; font-size:13px; }
+  section { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin-bottom:24px; box-shadow:0 6px 18px rgba(40,30,10,.08); }
+  section h2 { margin:0 0 4px; font-size:19px; color:var(--navy); }
+  .meta { color:var(--muted); font-size:13px; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); gap:20px; align-items:start; }
+  @media (max-width:900px) { .grid { grid-template-columns:1fr; } }
+  figure { margin:0; }
+  img { width:100%; border:1px solid var(--line); border-radius:10px; display:block; cursor:zoom-in; }
+  figcaption { font-size:12.5px; color:var(--muted); margin-top:6px; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:99px; font-size:12px; font-weight:700; background:#e3f3ea; color:var(--ok); }
+  .pill.cash { background:#fdecea; color:var(--bad); }
+  .pill.zero { background:#eef3fb; color:var(--navy); }
+  dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:13.5px; }
+  dt { color:var(--muted); font-weight:600; }
+  dd { margin:0; }
+  code { font-family:ui-monospace,Menlo,monospace; font-size:12px; background:#f1ede3; padding:1px 5px; border-radius:4px; }
+  .lightbox { position:fixed; inset:0; background:rgba(10,15,30,.85); display:none; align-items:center; justify-content:center; padding:30px; z-index:9; cursor:zoom-out; }
+  .lightbox.on { display:flex; }
+  .lightbox img { max-width:100%; max-height:100%; width:auto; cursor:zoom-out; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding-bottom:30px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Campus Customs: Resolved Board</h1>
+  <p>Screenshots of the React dashboard (<code style="background:rgba(255,255,255,.12);color:#fff">frontend/</code>, http://localhost:5173) captured during the real Problem 9 run on 2026-10-14, desk date 2026-08-31.</p>
+  <div class="chips">
+    <span>Start: <b>$3,400.00</b></span>
+    <span>#101: <b>−$840.00</b></span>
+    <span>#102: <b>−$2,400.00</b></span>
+    <span>#103: <b>$0.00</b></span>
+    <span>End: <b>$160.00</b> = cash_accounts</span>
+    <span>3 / 3 tickets resolved</span>
+  </div>
+</header>
+<main>
+  <nav><a href="#before">Before signing</a><a href="#t101">Ticket 101</a><a href="#t102">Ticket 102</a><a href="#t103">Ticket 103</a><a href="#t103b">103 recap detail</a></nav>
+
+  <section id="before">
+    <h2>All three runs finished, waiting on the human</h2>
+    <div class="meta">After the Boss worked 101, 102 and 103 in order. Nothing has been paid yet.</div>
+    <div class="grid">
+      <figure><img src="screenshots/00_board_before_signing.jpg" alt="Board with three tickets needing a signature"><figcaption>In-tray shows all three tickets as “Needs your signature”. The cash drawer shows $3,400 with −$3,240 pending, so “If you sign everything” = $160. Three slips are queued.</figcaption></figure>
+      <dl>
+        <dt>Slip #1</dt><dd>Invoice #501, $840 to Bulldog Print Co (Accounting, ticket 101)</dd>
+        <dt>Slip #2</dt><dd>Rent, $2,400 to Elm City Properties (Accounting via Facilities, ticket 102)</dd>
+        <dt>Slip #3</dt><dd>10% discount quote, $1,044 (Boss, ticket 103), no cash</dd>
+        <dt>Drafts</dt><dd>#1 Tauhid, #2 Elm City Properties, #3 Yale AI Club (all unsent)</dd>
+        <dt>Decision</dt><dd>Human chose “sign all three” as <b>Teddy</b></dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="t101">
+    <h2>Ticket 101 · Bulldog tee for Tauhid Zaman <span class="pill">Resolved</span> <span class="pill cash">−$840.00</span></h2>
+    <div class="meta">Run f0949fb3a72a · 18 model calls · 18 tool calls · 44,978 tokens</div>
+    <div class="grid">
+      <figure><img src="screenshots/01_ticket101_resolved.jpg" alt="Ticket 101 resolved"><figcaption>After signing slip #1: the RESOLVED stamp is on #101 in the Out-tray, the invoice fact card reads “paid”, checking is $2,560, and the team floor shows Boss, Inventory, Accounting and Customer Service reported back with Facilities “not needed”.</figcaption></figure>
+      <dl>
+        <dt>Agents</dt><dd>Boss → Inventory, Boss → Accounting, Boss → Customer Service</dd>
+        <dt>Key tools</dt><dd><code>check_restock_path</code>, <code>request_payment_approval</code>, <code>draft_message</code></dd>
+        <dt>Approval</dt><dd>#1 signed by Teddy → payment #1, invoice #501 paid</dd>
+        <dt>Outcome</dt><dd>Bulldog unblocked; S reprint ETA 2026-09-05; Tauhid offered M/L/XL now (draft #1)</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="t102">
+    <h2>Ticket 102 · Rent due: Elm City Properties <span class="pill">Resolved</span> <span class="pill cash">−$2,400.00</span></h2>
+    <div class="meta">Run 7472433341f2 · 17 model calls · 20 tool calls · 42,448 tokens</div>
+    <div class="grid">
+      <figure><img src="screenshots/02_ticket102_resolved.jpg" alt="Ticket 102 resolved"><figcaption>After signing slip #2: checking counts down to $160 (shown flashing), the receipt tape lists #1 invoice −$840 and #2 rent −$2,400 signed “Teddy”, and the lease card shows next due 2026-10-02. Inventory and Customer Service stay faded (“not needed”).</figcaption></figure>
+      <dl>
+        <dt>Agents</dt><dd>Boss → Facilities → Accounting; Boss → Accounting (duplicate check, nothing re-queued)</dd>
+        <dt>Key tools</dt><dd><code>check_rent_and_cash</code>, <code>draft_message</code>, <code>request_payment_approval</code>, <code>get_board</code></dd>
+        <dt>Approval</dt><dd>#2 signed by Teddy → payment #2 (rent, lease 1)</dd>
+        <dt>Outcome</dt><dd>Rent paid 2 days early; landlord acknowledgement draft #2</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="t103">
+    <h2>Ticket 103 · Bulk hoodie discount for Yale AI Club <span class="pill">Resolved</span> <span class="pill zero">$0.00</span></h2>
+    <div class="meta">Run 06585d90e87f · 15 model calls · 14 tool calls · 42,175 tokens</div>
+    <div class="grid">
+      <figure><img src="screenshots/03_ticket103_resolved.jpg" alt="Ticket 103 resolved"><figcaption>All three tickets in the Out-tray, the In-tray empty (“Nothing waiting”), no slips left, and the signed history showing #1, #2 and #3 by Teddy. Checking stays at $160 because a discount quote moves no cash.</figcaption></figure>
+      <dl>
+        <dt>Agents</dt><dd>Boss → Inventory, Boss → Customer Service (Boss priced the discount itself)</dd>
+        <dt>Key tools</dt><dd><code>list_vendors</code>, <code>check_restock_path</code>, <code>quote_bulk_order</code>, <code>request_price_override</code>, <code>draft_message</code></dd>
+        <dt>Approval</dt><dd>#3 (10% off, $1,044 for 20) signed by Teddy; no payment</dd>
+        <dt>Outcome</dt><dd>8 hoodies available now; 12-unit restock ($264) flagged as more than the $160 left, so it's an open follow-up</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="t103b">
+    <h2>Ticket 103 · Desk radio and team recap</h2>
+    <div class="meta">Scrolled into the case file of the resolved ticket.</div>
+    <figure><img src="screenshots/04_ticket103_recap_detail.jpg" alt="Ticket 103 feed and recap"><figcaption>Left: the end of the live feed. The Boss's report lists the decisions it needs from the human (including the $104 restock shortfall), “Run finished · 42,175 tokens”, then Teddy's handwritten signature line “signed slip #3 · ticket resolved”. Right: the Team recap cards for Boss, Inventory and Customer Service with the MCP tools each used.</figcaption></figure>
+  </section>
+</main>
+<footer>Data: <code>output/resolved_tickets.json</code> · Plan vs. actual: <code>output/desk_tickets.html</code> · Every step: <code>output/audit_trail.json</code></footer>
+<div class="lightbox" id="lb"><img alt=""></div>
+<script>
+  const lb = document.getElementById('lb'), lbImg = lb.querySelector('img');
+  document.querySelectorAll('figure img').forEach(img => img.addEventListener('click', () => { lbImg.src = img.src; lb.classList.add('on'); }));
+  lb.addEventListener('click', () => lb.classList.remove('on'));
+</script>
+</body>
+</html>
